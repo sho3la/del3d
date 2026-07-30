@@ -4,9 +4,17 @@ project(del3d VERSION 0.1 LANGUAGES CXX)
 # del3d - 3D Delaunay triangulation.
 #
 # The library itself uses nothing but the C++17 standard library, and is built
-# as a plain static library so it can be dropped into any project.
+# as a plain static library so it can be dropped into any project. So do the
+# tests and the examples. The viewer is the exception - it needs Polyscope, and
+# is therefore a separate target that is off by default.
 
-option(DEL3D_BUILD_TESTS "Build del3d's tests" OFF)
+option(DEL3D_BUILD_TESTS    "Build del3d's tests"                        OFF)
+option(DEL3D_BUILD_EXAMPLES "Build del3d's examples"                     OFF)
+option(DEL3D_BUILD_VIEWER   "Build the Polyscope viewer (needs OpenGL)"  OFF)
+option(DEL3D_FETCH_POLYSCOPE
+       "If the viewer is on and Polyscope is not installed, download it"  ON)
+set(DEL3D_POLYSCOPE_TAG "v2.6.1" CACHE STRING
+    "The Polyscope tag to fetch when DEL3D_FETCH_POLYSCOPE is used")
 
 # The headers are listed as sources so that IDE project generators - the Visual
 # Studio solution explorer, Xcode, and the file-api that VS Code and CLion read
@@ -77,4 +85,12 @@ endif()
 if(DEL3D_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
+endif()
+
+if(DEL3D_BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
+
+if(DEL3D_BUILD_VIEWER)
+    add_subdirectory(viewer)
 endif()

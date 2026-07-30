@@ -57,8 +57,16 @@ cmake -S . -B build
 cmake --build build
 ```
 
-Produces a static library `del3d` exporting `include/`. `DEL3D_BUILD_TESTS=ON`
-adds the tests.
+Produces a static library `del3d` exporting `include/`. Everything else is
+opt-in:
+
+| option | default | effect |
+|---|---|---|
+| `DEL3D_BUILD_TESTS` | `OFF` | builds the tests and registers them with CTest |
+| `DEL3D_BUILD_EXAMPLES` | `OFF` | builds `examples/` |
+| `DEL3D_BUILD_VIEWER` | `OFF` | builds `viewer/`, which needs Polyscope and OpenGL |
+| `DEL3D_FETCH_POLYSCOPE` | `ON` | if the viewer is on and Polyscope is not installed, download it at configure time |
+| `DEL3D_POLYSCOPE_TAG` | `v2.6.1` | the tag to download |
 
 Two optional diagnostics, compiled out by default:
 
@@ -66,6 +74,53 @@ Two optional diagnostics, compiled out by default:
 |---|---|
 | `DEL3D_VALIDATE` | runs `Tds::validate()` after every insertion and aborts on the first broken invariant, naming the insertion that broke it |
 | `DEL3D_TRACE` / `DEL3D_WALK` | dumps the cell table after each insertion / traces the location walk |
+
+## Examples and the viewer
+
+```sh
+cmake -S . -B build -DDEL3D_BUILD_EXAMPLES=ON -DDEL3D_BUILD_VIEWER=ON
+cmake --build build
+```
+
+`examples/simple.cpp` is the whole API in three lines plus the two things people
+actually want back from it - the Voronoi vertex dual to each cell, and the cells
+incident to a vertex. It links `del3d` without adding `src/` to the include
+path, so it also demonstrates that `include/` is self-sufficient.
+
+`viewer/` renders the tetrahedra, the input points and the Voronoi vertices, and
+colours the cells by circumradius and by radius-edge ratio - the usual sliver
+measure. Its point set can be switched between random, lattice and quantised
+surfaces from the UI, which is the quickest way to see what the exact predicates
+are for: the degenerate sets are the ones an inexact implementation tears holes
+in.
+
+It also imports meshes - OBJ, OFF, PLY (ASCII and binary), STL (ASCII and
+binary) and plain `x y z` point lists - either as an argument or from the UI.
+Only the vertices go into the triangulation, since that is all del3d takes; the
+faces are drawn alongside so the input surface and the tetrahedra of its
+vertices can be compared. The readers are in `viewer/mesh_io.h` and are the
+viewer's business alone: nothing in the library or the tests reads a file.
+
+A tetrahedralisation is opaque from outside, and the interesting cells are the
+ones you cannot see, so there are four ways to look in, and they answer
+different questions:
+
+| control | shows |
+|---|---|
+| cell edges | the cell boundaries on the visible hull |
+| wireframe | every edge of every cell, interior included - switch the solid cells off for a true see-through view |
+| slice plane | a cross-section; "cut cells open" slices the tetrahedra themselves instead of dropping whole ones |
+| transparency | all of the above at once |
+
+The `wireframe only`, `solid` and `x-ray` buttons set the combinations worth
+starting from.
+
+The viewer is the only thing in the tree with a third-party dependency
+([Polyscope](https://polyscope.run), MIT). It is off by default and isolated in
+its own target, and Polyscope is only downloaded if it is not already installed.
+`del3d_viewer --check` drives the whole thing against Polyscope's mock backend
+and exits without opening a window, so it runs on a machine with no display; it
+is registered with CTest when the tests are on.
 
 ## Tests
 
